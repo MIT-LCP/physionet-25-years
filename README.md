@@ -12,10 +12,10 @@ PDFs: https://www.dropbox.com/scl/fo/a6ua6gn1ntbjjlpsrmes5/APAx0Dtqf4Ktz8d7CQoq7
 
 ## Parse PDFs (`parse_pdfs.py`)
 
-`parse_pdfs.py` is a script that will parse a folder containing PDFs and record whether or not a set of target words (MIMIC, PhysioNet, etc) are mentioned. The script is run with:
+`parse_pdfs.py` is a script that will parse a folder containing PDFs and record whether or not a set of *case-sensitive* target words (MIMIC, PhysioNet, etc) are mentioned. The script is run with:
 
 ```
-python parse_pdfs.py /path/to/pdfs PhysioNet MIMIC-III WFDB /path/to/output.csv
+python parse_pdfs.py /path/to/pdfs keyword1 keyword2 keyword3 /path/to/output.csv
 ```
 
 e.g.

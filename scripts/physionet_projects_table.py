@@ -45,9 +45,10 @@ for project in all_projs:
         # Get all of the fields of interest from the project
         if citation:
             citation1 = citation[0]
-            rows.append([project.id, project.version, project.title, project.creation_datetime, project.publish_datetime, project.doi, search_project_text_for_str(project, "NIH"), search_project_text_for_str(project, "NIBIB"), search_project_text_for_str(project, "NHLBI"), author.id, author.get_full_name(), author.user.join_date, citation1.citation, citation1.url])
+            breakpoint()
+            rows.append([project.id, project.version, project.title, project.creation_datetime, project.publish_datetime, project.doi, search_project_text_for_str(project, "NIH"), search_project_text_for_str(project, "NIBIB"), search_project_text_for_str(project, "NHLBI"), author.id, citation1.id])
         else:
-            rows.append([project.id, project.version, project.title, project.creation_datetime, project.publish_datetime, project.doi, search_project_text_for_str(project, "NIH"), search_project_text_for_str(project, "NIBIB"), search_project_text_for_str(project, "NHLBI"), author.id, author.get_full_name(), author.user.join_date])
+            rows.append([project.id, project.version, project.title, project.creation_datetime, project.publish_datetime, project.doi, search_project_text_for_str(project, "NIH"), search_project_text_for_str(project, "NIBIB"), search_project_text_for_str(project, "NHLBI"), author.id)
 
 # Save to a CSV table
 with open('projects_table.csv', 'w', newline='') as csvfile:

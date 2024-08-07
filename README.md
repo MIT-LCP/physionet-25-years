@@ -18,9 +18,20 @@ Scripts can then be run with:
 python scripts/yourscript.py
 ```
 
-## Links
+### 2. Symlink the `data` folder to Dropbox
 
-Paper: https://docs.google.com/document/d/1eDlbaOF7ObhNyJ6hBzf-rLXCwViLRHXenTXN5Z2qfSU/edit#heading=h.eozrij9p5azs
+Data for this project is on Dropbox at:
+https://docs.google.com/document/d/1eDlbaOF7ObhNyJ6hBzf-rLXCwViLRHXenTXN5Z2qfSU/edit#heading=h.eozrij9p5azs
+
+You should symlink the Dropbox folder to a folder called `./data`. From the root of the cloned repository, do:
+
+```
+ln -s /path/to/dropbox/ data
+```
+
+This will create a new `data` folder containing papers, NIH reporter information, etc.
+
+## Links
 
 Spreadsheet: https://docs.google.com/spreadsheets/d/1DuK7svMZ6U52PuqdxBkuCq60PQUmwnS6Vko-uMXcgPE/edit
 

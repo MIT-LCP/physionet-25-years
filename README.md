@@ -2,6 +2,22 @@
 
 Code for 25 years paper
 
+## Installation
+
+### 1. Install the `twentyfiveyears` package
+
+Before running scripts in the `/scripts/` folder, you should install the `twentyfiveyears` package with:
+
+```
+pip install -e .
+```
+
+Scripts can then be run with:
+
+```
+python scripts/yourscript.py
+```
+
 ## Links
 
 Paper: https://docs.google.com/document/d/1eDlbaOF7ObhNyJ6hBzf-rLXCwViLRHXenTXN5Z2qfSU/edit#heading=h.eozrij9p5azs

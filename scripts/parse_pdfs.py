@@ -93,8 +93,9 @@ if __name__ == "__main__":
     parser.add_argument("--output_csv", "-o", type=str,
                         help="Path to the output CSV file")
     parser.add_argument("--depth_target", "-d", type=int,
+                        default=0,
                         help="Number of levels below the base_path to the folders with the PDF files")
 
     args = parser.parse_args()
 
-    main(args.base_path, args.keywords, args.output_csv)
+    main(args.base_path, args.keywords, args.output_csv, args.depth_target)

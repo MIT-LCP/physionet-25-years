@@ -90,7 +90,7 @@ def standardize_author_names(df):
     return df
 
 
-def get_pi_names(projects):
+def get_investigators(projects):
     """
     Get a list of the PIs names who were granted funding from NIH.
     """

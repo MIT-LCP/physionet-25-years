@@ -37,10 +37,85 @@ def combine_exporter_tables(folder, pattern, start_year):
     return df_combined
 
 
+def is_suffix(string):
+    """
+    Check to see if a given string is a common name suffix
+    """
+    name_suffixes = [
+        "Jr.", "Jr", "Sr.", "Sr", "II", "III", "IV", "V",
+        "Esq.", "Esq", "Ph.D.", "PhD", "M.D.", "MD", "D.D.S.", "DDS", "J.D.", "JD",
+        "M.B.A.", "MBA", "D.O.", "DO", "R.N.", "RN", "CPA", "LL.M.", "LLM",
+        "DVM", "DVM", "DDS", "DDS", "PE", "PE", "FACS", "FACS", "MPH", "MPH",
+        "D.Min.", "DMin", "M.Div.", "MDiv", "Ed.D.", "EdD", "Psy.D.", "PsyD",
+        "B.Sc.", "BSc", "M.Sc.", "MSc",
+        "D.Litt.", "DLitt", "O.D.", "OD", "MSW", "MSW", "MSN", "MSN",
+        "DC", "DC", "PA-C", "PAC", "RN-BSN", "RNBSN", "CFA", "CFA"
+    ]
+    # Removed these since they are often names and aren't common for researchers "B.A.", "BA", "M.A.", "MA",
+
+    if string in name_suffixes:
+        return True
+    else:
+        return False
+
+
+def standardize_physionet_names(df):
+    """
+    Split the PhysioNet user names into FIRST MIDDLE LAST format, keeping last name together if it contains a connector
+    word. Remove suffixes.
+    """
+    # Common connectors
+    connectors = ["de", "da", "y", "del", "di", "van", "von", "la", "le"]
+    # Vectorized splitting of names
+    split_names = df['full_name'].str.split()
+    # Extract FIRST names
+    df['first_name'] = split_names.str[0]
+
+    # Extract LAST names considering connectors
+    last_names = []
+    filtered_names = []
+    for names in split_names:
+        # Remove suffixes from the last parts
+        filtered_parts = [name for name in names if not is_suffix(name)]
+
+        # Build last name considering connectors
+        found_connector = False
+        for part in filtered_parts:
+            if part.lower() in connectors and filtered_parts and len(filtered_parts) > 3:  # If the part is a connector
+                found_connector = True
+
+        # The last name will be the last element in last_name_parts
+        last_names.append(' '.join(filtered_parts[-3:]) if found_connector else filtered_parts[-1])
+        # Build a list of filtered names to be used below
+        filtered_names.append(filtered_parts)
+
+    df['last_name'] = last_names
+
+    # Extract MIDDLE names by removing FIRST and LAST from the filtered parts
+    df['middle_name'] = [
+        ' '.join(
+            part for part in parts if part not in (first, *last.split())
+        )
+        for parts, first, last in zip(filtered_names, df['first_name'], df['last_name'])
+    ]
+
+    # Replace hyphens with spaces in middle_name
+    df['middle_name_split'] = df['middle_name'].str.replace('-', ' ', regex=False)
+    # Convert middle names to first initials without punctuation, and ensure no NaN values
+    df['middle_initials'] = df['middle_name_split'].str.split().str.join(' ').str.extractall(r'(\b\w)')[0].groupby(
+        level=0).agg(' '.join).fillna('')
+
+    # Concatenate the processed columns back into a single column without extra spaces
+    df['physionet_name'] = df[['first_name', 'middle_initials', 'last_name']].fillna('').agg(
+        ' '.join, axis=1).str.replace(' +', ' ', regex=True).str.strip()
+
+    return df
+
+
 def standardize_pi_names(df):
     """
     Get the names from the NIH projects data into FIRST MIDDLE LAST format
-    and remove the '(contact)' entries
+    and remove suffixes and the '(contact)' entries
     """
     # Split the names based on the ';' delimiter
     df["name_list"] = df["PI_NAMEs"].str.split(";")
@@ -57,7 +132,6 @@ def standardize_pi_names(df):
     df[["last_name", "first_middle_name"]] = df["name_list"].str.split(
         ",", n=1, expand=True
     )
-
     # Combine <FIRST> <MIDDLE> <LAST> into the desired format
     df["project_formatted_name"] = (
         df["first_middle_name"].str.strip() + " " + df["last_name"].str.strip()
@@ -68,7 +142,7 @@ def standardize_pi_names(df):
 
 def standardize_author_names(df):
     """
-    Get the names from the NIH publications data into FIRST MIDDLE LAST format
+    Get the names from the NIH publications data into FIRST MIDDLE LAST format and remove suffixes.
     """
     # Split the names based on the ';' delimiter
     df["name_list"] = df["AUTHOR_LIST"].str.split(";")
@@ -88,6 +162,25 @@ def standardize_author_names(df):
     )
 
     return df
+
+
+def get_physionet_users(path, person_map):
+    """
+    Get a DataFrame of the PhysioNet users
+    """
+
+    # Read in the PhysioNet users data
+    physionet_users = pd.read_csv(path, low_memory=False)
+    # Add person_id column to the users table
+    physionet_users = pd.merge(physionet_users, person_map, left_on='user_id', right_on='physionet_id')
+    # Standardize the PhysioNet name into FIRST MIDDLE LAST
+    physionet_users = standardize_physionet_names(physionet_users)
+    # Only keep the columns we need from the users table
+    physionet_users = physionet_users[['person_id', 'physionet_name']].copy()
+    # Use lower case for the users name
+    physionet_users['physionet_name'] = physionet_users['physionet_name'].str.lower()
+
+    return physionet_users
 
 
 def get_investigators(projects):

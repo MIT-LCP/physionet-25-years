@@ -53,68 +53,37 @@ def is_suffix(string):
     ]
     # Removed these since they are often names and aren't common for researchers "B.A.", "BA", "M.A.", "MA",
 
-    if string in name_suffixes:
+    if string.lower() in [suffix.lower() for suffix in name_suffixes]:
         return True
     else:
         return False
 
 
-def standardize_physionet_names(df):
+def standardize_physionet_names(df_names, first_name_as_initial=False):
     """
-    Split the PhysioNet user names into FIRST MIDDLE LAST format, keeping last name together if it contains a connector
-    word. Remove suffixes.
+    Split the PhysioNet user names into FIRST LAST format. Remove suffixes.
     """
-    # Common connectors
-    connectors = ["de", "da", "y", "del", "di", "van", "von", "la", "le"]
-    # Vectorized splitting of names
-    split_names = df['full_name'].str.split()
-    # Extract FIRST names
-    df['first_name'] = split_names.str[0]
+    df = pd.DataFrame()
+    # Split the first_names strings, remove suffixes, and take only the first part
+    df['first_name'] = df_names['first_names'].apply(
+    lambda x: next((part for part in x.split() if not is_suffix(part)), x.split()[0]) if pd.notna(x) and x else None)
 
-    # Extract LAST names considering connectors
-    last_names = []
-    filtered_names = []
-    for names in split_names:
-        # Remove suffixes from the last parts
-        filtered_parts = [name for name in names if not is_suffix(name)]
+    # Split the last_name strings, remove suffixes
+    df['last_name'] = df_names['last_name'].apply(
+        lambda x: ' '.join([part for part in x.split() if not is_suffix(part)]) if pd.notna(x) and x else None)
 
-        # Build last name considering connectors
-        found_connector = False
-        for part in filtered_parts:
-            if part.lower() in connectors and filtered_parts and len(filtered_parts) > 3:  # If the part is a connector
-                found_connector = True
+    if first_name_as_initial:
+        df['first_initial'] = df['first_name'].apply(lambda x: x[0] if x else '')
+        df['physionet_name'] = df["first_initial"].str.strip() + " " + df["last_name"].str.strip()
+    else:
+        df['physionet_name'] = df["first_name"].str.strip() + " " + df["last_name"].str.strip()
 
-        # The last name will be the last element in last_name_parts
-        last_names.append(' '.join(filtered_parts[-3:]) if found_connector else filtered_parts[-1])
-        # Build a list of filtered names to be used below
-        filtered_names.append(filtered_parts)
-
-    df['last_name'] = last_names
-
-    # Extract MIDDLE names by removing FIRST and LAST from the filtered parts
-    df['middle_name'] = [
-        ' '.join(
-            part for part in parts if part not in (first, *last.split())
-        )
-        for parts, first, last in zip(filtered_names, df['first_name'], df['last_name'])
-    ]
-
-    # Replace hyphens with spaces in middle_name
-    df['middle_name_split'] = df['middle_name'].str.replace('-', ' ', regex=False)
-    # Convert middle names to first initials without punctuation, and ensure no NaN values
-    df['middle_initials'] = df['middle_name_split'].str.split().str.join(' ').str.extractall(r'(\b\w)')[0].groupby(
-        level=0).agg(' '.join).fillna('')
-
-    # Concatenate the processed columns back into a single column without extra spaces
-    df['physionet_name'] = df[['first_name', 'middle_initials', 'last_name']].fillna('').agg(
-        ' '.join, axis=1).str.replace(' +', ' ', regex=True).str.strip()
-
-    return df
+    return df['physionet_name']
 
 
-def standardize_pi_names(df):
+def standardize_pi_names(df, first_name_as_initial=False):
     """
-    Get the names from the NIH projects data into FIRST MIDDLE LAST format
+    Get the names from the NIH projects data into FIRST LAST format
     and remove suffixes and the '(contact)' entries
     """
     # Split the names based on the ';' delimiter
@@ -128,21 +97,29 @@ def standardize_pi_names(df):
         df["name_list"].str.replace(r"\s*\(contact\)", "", regex=True).str.strip()
     )
 
-    # Split the name into <LAST> and <FIRST> <MIDDLE>, splitting at the first comma only
-    df[["last_name", "first_middle_name"]] = df["name_list"].str.split(
-        ",", n=1, expand=True
-    )
-    # Combine <FIRST> <MIDDLE> <LAST> into the desired format
-    df["project_formatted_name"] = (
-        df["first_middle_name"].str.strip() + " " + df["last_name"].str.strip()
-    )
+    # Split into LAST and FIRST names
+    df["last_name"] = df["name_list"].str.split(",", n=1).str[0].str.strip()
+    df["first_name"] = df["name_list"].str.split(",", n=1).str[1].str.strip().str.split().str[0]
+
+    # Remove suffixes
+    df["last_name_no_suffix"] = df['last_name'].apply(
+        lambda x: ' '.join([part for part in x.split() if not is_suffix(part)]) if pd.notna(x) and x else None)
+    df["first_name_no_suffix"] = df['first_name'].apply(
+    lambda x: next((part for part in x.split() if not is_suffix(part)), x.split()[0]) if pd.notna(x) and x else None)
+
+    if first_name_as_initial:
+        df['first_initial'] = df['first_name_no_suffix'].apply(lambda x: x[0] if x else '')
+        df['project_formatted_name'] = df["first_initial"].str.strip() + " " + df["last_name_no_suffix"].str.strip()
+    else:
+        df['project_formatted_name'] = df["first_name_no_suffix"].str.strip() + " " + df[
+            "last_name_no_suffix"].str.strip()
 
     return df
 
 
-def standardize_author_names(df):
+def standardize_author_names(df, first_name_as_initial=False):
     """
-    Get the names from the NIH publications data into FIRST MIDDLE LAST format and remove suffixes.
+    Get the names from the NIH publications data into FIRST LAST format and remove suffixes.
     """
     # Split the names based on the ';' delimiter
     df["name_list"] = df["AUTHOR_LIST"].str.split(";")
@@ -150,68 +127,73 @@ def standardize_author_names(df):
     # Expand the DataFrame so each name gets its own row
     df = df.explode("name_list")
 
-    # Split the name into <LAST> and <FIRST> <MIDDLE>, splitting at the first
-    # comma only
-    df[["last_name", "first_middle_name"]] = df["name_list"].str.split(
-        ",", n=1, expand=True
-    )
+    # Split into LAST and FIRST names
+    df["last_name"] = df["name_list"].str.split(",", n=1).str[0].str.strip()
+    df["first_name"] = df["name_list"].str.split(",", n=1).str[1].str.strip().str.split().str[0]
 
-    # Combine <FIRST> <MIDDLE> <LAST> into the desired format
-    df["publication_formatted_name"] = (
-        df["first_middle_name"].str.strip() + " " + df["last_name"].str.strip()
-    )
+    # Remove suffixes
+    df["last_name_no_suffix"] = df['last_name'].apply(
+        lambda x: ' '.join([part for part in x.split() if not is_suffix(part)]) if pd.notna(x) and x else None)
+    df["first_name_no_suffix"] = df['first_name'].apply(
+    lambda x: next((part for part in x.split() if not is_suffix(part)), x.split()[0]) if pd.notna(x) and x else None)
+
+    if first_name_as_initial:
+        df['first_initial'] = df['first_name_no_suffix'].apply(lambda x: x[0] if x else '')
+        df['publication_formatted_name'] = df["first_initial"].str.strip() + " " + df["last_name_no_suffix"].str.strip()
+    else:
+        df['publication_formatted_name'] = df["first_name_no_suffix"].str.strip() + " " + df[
+            "last_name_no_suffix"].str.strip()
 
     return df
 
 
-def get_physionet_users(path, person_map):
+def get_physionet_users(path, person_map, first_name_as_initial):
     """
     Get a DataFrame of the PhysioNet users
     """
-
     # Read in the PhysioNet users data
-    physionet_users = pd.read_csv(path, low_memory=False)
+    df = pd.read_csv(path, low_memory=False)
     # Add person_id column to the users table
-    physionet_users = pd.merge(physionet_users, person_map, left_on='user_id', right_on='physionet_id')
-    # Standardize the PhysioNet name into FIRST MIDDLE LAST
-    physionet_users = standardize_physionet_names(physionet_users)
+    df_physionet_users = pd.merge(df, person_map, left_on='user_id', right_on='physionet_id')
+    # Standardize the PhysioNet name into FIRST LAST
+    df_physionet_names = df_physionet_users[['first_names', 'last_name']].copy()
+    standardized_names = standardize_physionet_names(df_physionet_names, first_name_as_initial)
+    df_physionet_users['physionet_name'] = standardized_names.str.lower()
     # Only keep the columns we need from the users table
-    physionet_users = physionet_users[['person_id', 'physionet_name']].copy()
-    # Use lower case for the users name
-    physionet_users['physionet_name'] = physionet_users['physionet_name'].str.lower()
+    df_physionet_users = df_physionet_users[['person_id', 'physionet_name']].copy()
 
-    return physionet_users
+    return df_physionet_users
 
 
-def get_investigators(projects):
+def get_investigators(df_projects, first_name_as_initial):
     """
     Get a list of the PIs names who were granted funding from NIH.
     """
-    projects = standardize_pi_names(projects)
-    projects = projects.drop_duplicates(subset="project_formatted_name")
+    df_investigators = standardize_pi_names(df_projects, first_name_as_initial)
+    df_investigators = df_investigators.drop_duplicates(subset="project_formatted_name")
 
     # Prepare a list of formatted names from projects
     project_formatted_names = (
-        projects["project_formatted_name"].str.lower().dropna().tolist()
+        df_investigators["project_formatted_name"].str.lower().dropna().tolist()
     )
 
     return project_formatted_names
 
 
-def get_authors(publications):
+def get_authors(df_publications, first_name_as_initial):
     """
     Get a list of the authors who have published against NIH projects.
 
     # NOTE: have to manually rename the publication and links spreadsheets
     # after 2021 to remove the FY in front of YYYY
     """
-    publications = standardize_author_names(publications)
-    publications = publications.drop_duplicates(
+    df_authors = standardize_author_names(df_publications, first_name_as_initial)
+    df_authors = df_authors.drop_duplicates(
         subset="publication_formatted_name"
     )
 
     publication_formatted_names = (
-        publications["publication_formatted_name"].str.lower().dropna().tolist()
+        df_authors["publication_formatted_name"].str.lower().dropna().tolist()
     )
 
     return publication_formatted_names

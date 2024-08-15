@@ -159,6 +159,9 @@ def get_physionet_users(path, person_map, first_name_as_initial):
     df_physionet_names = df_physionet_users[['first_names', 'last_name']].copy()
     standardized_names = standardize_physionet_names(df_physionet_names, first_name_as_initial)
     df_physionet_users['physionet_name'] = standardized_names.str.lower()
+    # Drop rows with blank / NaN names
+    df_physionet_users = df_physionet_users[
+        (df_physionet_users['physionet_name'] != '') & (df_physionet_users['physionet_name'].notna())]
     # Only keep the columns we need from the users table
     df_physionet_users = df_physionet_users[['person_id', 'physionet_name']].copy()
 

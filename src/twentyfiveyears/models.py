@@ -9,6 +9,7 @@ For example:
 `VenueCollection` Class: Represents a collection of publication venues.
 """
 import os
+import re
 
 import pymupdf
 
@@ -50,6 +51,7 @@ class PublicationVenue:
         publication (Publication): The publication to add to the venue.
         """
         self.publications.append(publication)
+
 
     def search_keywords(self, keywords):
         """
@@ -94,6 +96,28 @@ class PublicationVenue:
         print()
 
         return proportion_summary
+
+    def print_passages(self):
+        """
+        Prints passages, in a clean format, from publications that contain the keywords.
+        """
+        for publication in self.publications:
+            if publication.includes_keyword:
+                print(f"Filename: {publication.filename}")
+                cleaned_passages = []
+
+                # Clean each passage
+                for passage in publication.keyword_passages:
+                    # Remove excessive whitespace and newlines
+                    passage = re.sub(r'\s+', ' ', passage).strip()
+
+                    # Avoid printing duplicate passages
+                    if passage not in cleaned_passages:
+                        cleaned_passages.append(passage)
+
+                # Print the cleaned passages
+                for passage in cleaned_passages:
+                    print(f"Passage: {passage}\n")
 
     def __repr__(self):
         """
@@ -166,8 +190,8 @@ class Publication:
                         start_idx = text.find(keyword)
 
                         # Extract 100 characters around the keyword
-                        start_passage = max(0, start_idx - 50)
-                        end_passage = min(len(text), start_idx + 50)
+                        start_passage = max(0, start_idx - 150)
+                        end_passage = min(len(text), start_idx + 150)
                         passages.append(text[start_passage:end_passage])
 
             doc.close()

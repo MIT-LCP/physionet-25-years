@@ -1,8 +1,6 @@
 # PhysioNet Quarter Century
 
-Code for 25 years paper
-
-## Installation
+## Plot figures
 
 ### 1. Install the `twentyfiveyears` package
 
@@ -18,21 +16,19 @@ Scripts can then be run with:
 python scripts/yourscript.py
 ```
 
-### 2. Symlink the `data` folder to Dropbox
+### 2. Prepare data
 
-Data for this project is on Dropbox at:
-https://www.dropbox.com/scl/fo/a6ua6gn1ntbjjlpsrmes5/APAx0Dtqf4Ktz8d7CQoq7xo?rlkey=kwzm0l6zsq2wseb13v41hnmtz&dl=0
+- Export user and publication data from PhysioNet.
+- Export citation data from Dimensions: https://www.dimensions.ai/ 
+- Copy data to the `data` folder
 
-You should symlink the Dropbox folder to a folder called `./data`. From the root of the cloned repository, do:
+### 3. Plot figures
 
-```
-ln -s /path/to/dropbox/ data
-```
+Plot figures using the Python Notbooks:
 
-This will create a new `data` folder containing papers, NIH reporter information, etc.
+- https://github.com/MIT-LCP/physionet-25-years/blob/main/notebooks/figure_1_timeline.ipynb
+- https://github.com/MIT-LCP/physionet-25-years/blob/main/notebooks/figure_2_projects.ipynb
+- https://github.com/MIT-LCP/physionet-25-years/blob/main/notebooks/figure_3_worldmap.ipynb
+- https://github.com/MIT-LCP/physionet-25-years/blob/main/notebooks/figure_4_users.ipynb
+- https://github.com/MIT-LCP/physionet-25-years/blob/main/notebooks/figure_5_citations.ipynb
 
-## Links
-
-Spreadsheet: https://docs.google.com/spreadsheets/d/1DuK7svMZ6U52PuqdxBkuCq60PQUmwnS6Vko-uMXcgPE/edit
-
-Data: https://www.dropbox.com/scl/fo/a6ua6gn1ntbjjlpsrmes5/APAx0Dtqf4Ktz8d7CQoq7xo?rlkey=kwzm0l6zsq2wseb13v41hnmtz&dl=0

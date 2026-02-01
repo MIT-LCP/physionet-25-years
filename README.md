@@ -18,7 +18,7 @@ Plot figures using the Python Notbooks:
 - https://github.com/MIT-LCP/physionet-25-years/blob/main/notebooks/figure_4_users.ipynb
 - https://github.com/MIT-LCP/physionet-25-years/blob/main/notebooks/figure_5_citations.ipynb
 
-## 1. `twentyfiveyears` package
+## `twentyfiveyears` package
 
 Some code in this repository (for example, scripts in the `/scripts/` folder), require the `twentyfiveyears` package to be installed.
 
